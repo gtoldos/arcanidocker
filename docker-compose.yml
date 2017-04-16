@@ -1,0 +1,119 @@
+version: '3'
+
+services:
+   
+   arcaniphp:
+    image: php:7-fpm
+    container_name: arcaniphp
+    expose:
+      - "9000"
+    ports:
+      - "9000:9000"
+
+
+   arcaninginx:
+     image: nginx:latest
+     container_name: arcaninginx
+     expose:
+       - "80"
+       - "443"
+     ports:
+       - "80:80"
+       - "443:443"
+     volumes:
+       - /var/run/docker.sock:/tmp/docker.sock:ro       
+       - ./conf/:/etc/nginx/conf.d/:ro
+       #- ./nginx.conf:/etc/nginx/nginx.conf:ro
+     links:
+       - arcaniwordpress
+       - arcaniphpmyadmin
+       - arcaniowncloud
+       - arcaniphp
+     environment:
+       ENABLE_IPV6: "true"
+
+
+   arcanimongo:
+     container_name: arcanimongo
+     image: mongo:latest
+     ports:
+       - "27018:27018"
+     command: --port 27018 --rest 
+     volumes:
+       - /srv/docker/mongodb:/var/lib/mongodb
+     restart: always
+
+
+
+   arcanimysql:
+     container_name: arcanimysql
+     image: mysql:latest
+     volumes:
+       - db_data:/var/lib/mysql
+     restart: always
+     environment:
+       MYSQL_ROOT_PASSWORD: arcani
+       MYSQL_DATABASE: arcani
+       MYSQL_USER: arcani
+       MYSQL_PASSWORD: arcani
+
+
+
+   arcaniwordpress:
+     container_name: arcaniwordpress
+     volumes:
+       - wp_data:/var/www/html
+     depends_on:
+       - arcanimysql
+     image: wordpress:latest
+     links:
+       - arcanimysql:mysql
+     restart: always
+     expose:
+       - "80"
+     environment:
+       WORDPRESS_DB_HOST: arcanimysql:3306
+       WORDPRESS_DB_PASSWORD: arcani
+       WORDPRESS_DB_NAME: arcani
+       WORDPRESS_DB_USER: arcani
+
+
+   arcaniphpmyadmin:
+     container_name: arcaniphpmyadmin
+     depends_on:
+       - arcanimysql
+     image: phpmyadmin/phpmyadmin
+     environment:
+       PMA_DATABASE: arcani
+       PMA_USER: arcani
+       PMA_PASSWORD: arcani
+     restart: always 
+     expose:
+       - "80"
+     links:
+       - arcanimysql:db
+
+
+   arcaniowncloud:
+     container_name: arcaniowncloud
+     depends_on:
+       - arcanimysql
+     image: owncloud:latest
+     links:
+       - arcanimysql:mysql
+     expose:
+       - "80"
+
+
+
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost"]
+#       interval: 1m30s
+#       timeout: 10s
+#       retries: 3
+
+
+volumes:
+  db_data:
+  wp_data:
+

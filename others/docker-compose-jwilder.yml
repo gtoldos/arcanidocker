@@ -1,0 +1,135 @@
+version: '3'
+
+services:
+   aNginx-proxy:
+     image: jwilder/nginx-proxy
+     container_name: arcaniNginx-proxy
+     expose:
+       - "80"
+       - "443"
+     ports:
+       - "80:80"
+       - "443:443"
+     volumes:
+       - /var/run/docker.sock:/tmp/docker.sock:ro       
+       - ./conf:/etc/nginx/conf.d:ro
+       - ./static:/srv/static:ro
+     links:
+       - aWordpress
+       - aPhpmyadmin
+       - aOwncloud
+     environment:
+       ENABLE_IPV6: "true"
+       DEFAULT_HOST: 87d7c1f0.ngrok.io 
+
+
+   aMongo:
+     container_name: arcaniMongo
+     image: mongo:latest
+     ports:
+       - "27018:27018"
+     command: --port 27018 --rest 
+     volumes:
+       - /srv/docker/mongodb:/var/lib/mongodb
+     restart: always
+
+
+
+   aMySQL:
+     container_name: arcaniMysql
+     image: mysql:latest
+     volumes:
+       - db_data:/var/lib/mysql
+     restart: always
+     environment:
+       MYSQL_ROOT_PASSWORD: arcani
+       MYSQL_DATABASE: arcani
+       MYSQL_USER: arcani
+       MYSQL_PASSWORD: arcani
+
+
+   aSwiftApp:
+     container_name: arcaniSwiftApp
+     depends_on:
+       - aMySQL
+       - aMongo
+     image: swift:latest
+     privileged: true
+     stdin_open: true
+     tty: true
+     environment:
+       SWIFT_DB_HOST: aMySQL:3306
+       SWIFT_DB_PASSWORD: arcani
+
+
+   aWordpress:
+     container_name: arcaniWordpress
+     depends_on:
+       - aMySQL
+     image: wordpress:latest
+     links:
+       - aMySQL:mysql
+     restart: always
+     expose:
+       - "80"
+     environment:
+       WORDPRESS_DB_HOST: aMySQL:3306
+       WORDPRESS_DB_PASSWORD: arcani
+       WORDPRESS_DB_NAME: arcani
+       WORDPRESS_DB_USER: arcani
+       VIRTUAL_HOST: "*.ngrok.io"
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost"]
+#       interval: 1m30s
+#       timeout: 10s
+#       retries: 3
+
+
+   aPhpmyadmin:
+     container_name: arcaniPhpmyadmin
+     depends_on:
+       - aMySQL
+     image: phpmyadmin/phpmyadmin
+     environment:
+       PMA_DATABASE: arcani
+       PMA_USER: arcani
+       PMA_PASSWORD: arcani
+     restart: always 
+     environment:
+       VIRTUAL_HOST: "*.ngrok.io"
+     expose:
+       - "80"
+     volumes:
+       - /sessions
+     links:
+       - aMySQL:db
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost"]
+#       interval: 1m30s
+#       timeout: 10s
+#       retries: 3
+
+
+
+   aOwncloud:
+     container_name: arcaniOwncloud
+     depends_on:
+       - aMySQL
+     image: owncloud:latest
+     links:
+       - aMySQL:mysql
+     expose:
+       - "80"
+#     healthcheck:
+#       test: ["CMD", "curl", "-f", "http://localhost"]
+#       interval: 1m30s
+#       timeout: 10s
+#       retries: 3
+     environment:
+       VIRTUAL_HOST: "*.ngrok.io"
+
+
+volumes:
+  db_data:
+
+
