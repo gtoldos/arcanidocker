@@ -14,6 +14,7 @@ services:
    arcaninginx:
      image: nginx:latest
      container_name: arcaninginx
+     tty: true
      expose:
        - "80"
        - "443"
@@ -38,9 +39,9 @@ services:
      image: mongo:latest
      ports:
        - "27018:27018"
-     command: --port 27018 --rest 
+     command: --port 27018
      volumes:
-       - /srv/docker/mongodb:/var/lib/mongodb
+       - mongo_vol:/data/db
      restart: always
 
 
@@ -116,4 +117,5 @@ services:
 volumes:
   db_data:
   wp_data:
+  mongo_vol:
 
