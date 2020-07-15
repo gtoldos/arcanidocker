@@ -2,6 +2,11 @@ version: '3'
 
 services:
    
+   arcaialpine:
+     image: redis:alpine
+     container_name: arcanialpine
+
+   
    arcaniphp:
     image: php:7-fpm
     container_name: arcaniphp
@@ -9,30 +14,6 @@ services:
       - "9000"
     ports:
       - "9000:9000"
-
-
-   arcaninginx:
-     image: nginx:latest
-     container_name: arcaninginx
-     tty: true
-     restart: always
-     expose:
-       - "80"
-       - "443"
-     ports:
-       - "80:80"
-       - "443:443"
-     volumes:
-       - /var/run/docker.sock:/tmp/docker.sock:ro       
-       - ./conf/:/etc/nginx/conf.d/:ro
-       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-     links:
-       - arcaniwordpress
-       - arcaniphpmyadmin
-       - arcaniowncloud
-       - arcaniphp
-     environment:
-       ENABLE_IPV6: "true"
 
 
    arcanimongo:
@@ -63,13 +44,6 @@ services:
        MYSQL_DATABASE: arcani
        MYSQL_USER: arcani
        MYSQL_PASSWORD: arcani
-
-   adminer:
-     image: adminer:latest
-     restart: always
-     ports:
-      - 8080:8080
-
 
    arcaniwordpress:
      container_name: arcaniwordpress
